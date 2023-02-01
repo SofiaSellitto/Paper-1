@@ -1,0 +1,223 @@
+---
+title: "Assessing the Rates of Crimes Against the Person in Toronto "
+author: Sofia Sellitto
+date: February 3, 2023
+abstract: Abstract 
+format: pdf
+bibliography: bibliography.bib
+---
+
+# 
+
+This data was free for use, courtesy of @opendatatoronto. We are using @R for analyzing this data.
+
+## Loading Packages and Data
+
+We import tidyverse by @tidyverse for convenience because it contains many other packages which will be useful for plotting and data manipulations. We also use @janitor for cleaning and @dplyr for manipulating data.
+
+```{r}
+## loading appropriate packages
+
+library(tidyverse)
+library(ggplot2)
+library(knitr)
+
+
+```
+
+```{r}
+## Loading the data set from Open Toronto 
+
+library(janitor)
+library(opendatatoronto)
+library(dplyr)
+
+# get package
+package <- show_package("police-annual-statistical-report-victims-of-crime")
+package
+
+# get all resources for this package
+resources <- list_package_resources("police-annual-statistical-report-victims-of-crime")
+
+# identify datastore resources; by default, Toronto Open Data sets datastore resource format to CSV for non-geospatial and GeoJSON for geospatial resources
+datastore_resources <- filter(resources, tolower(format) %in% c('csv', 'geojson'))
+
+# load the first datastore resource as a sample
+data <- filter(datastore_resources, row_number()==1) %>% get_resource()
+data
+```
+
+```{r}
+## checking for all possible categories of crime included in the data set 
+
+unique(data$Subtype)
+
+```
+
+```{r}
+## checking for all possible age-cohorts included in the data set 
+
+unique(data$AgeCohort)
+
+
+```
+
+```{r}
+## checking for all possible genders included in the data set 
+
+unique(data$Sex)
+
+
+```
+
+```{r}
+
+## making names easier to type  
+
+cleaned_data <-
+  clean_names(data)
+
+head(cleaned_data)
+
+
+```
+
+```{r}
+
+## Selecting only the variables of interest 
+
+cleaned_data |> 
+  select(
+    reported_year,
+    subtype,
+    sex,
+    age_cohort
+  )
+
+```
+
+```{r}
+
+## Checking for missing data in year column, if a number is given back, we know no dates are missing  
+
+mean(cleaned_data$reported_year)
+
+
+```
+
+```{r}
+
+## Cross-tabulating to understand the pattern of unknown data
+
+xtabs(~sex+age_cohort, data=cleaned_data)
+
+```
+
+```{r}
+
+## Changing "count" column from a character to numeric so it can be summed
+
+cleaned_data_dropped <- cleaned_data 
+
+
+cleaned_data_dropped$count = as.numeric(as.character(cleaned_data_dropped$count))
+
+head(cleaned_data_dropped)
+
+```
+
+```{r}
+
+## summing count of crimes and making them its own group
+
+cleaned_data_dropped_grouped <- cleaned_data_dropped |>
+  group_by(subtype, reported_year) |>
+  summarise(across(count, sum))
+
+cleaned_data_dropped_grouped
+```
+
+```{r}
+
+## calculating the mean number of crimes for each subcategory across 2014-2021
+
+mean_data <- cleaned_data_dropped_grouped |>
+    summarise(mean_count = mean(count))
+
+
+mean_data
+
+```
+
+```{r}
+
+## Creating a table to visually to display the mean number of crimes for each subcategory across 2014-2021
+
+knitr::kable(mean_data,"simple", caption = "Average Number of victims of crimes in Toronto across 2014-2021, grouped by category of crime", col.names=c("Category of Crime", "Average Number of Victims"), align=c('l', 'c'))
+
+
+```
+
+See @figure2
+
+```{r}
+## creating a line graph that includes the number of victims according to category of crime in Toronto across 2014-2021
+
+#| fig-cap: "Number of victims according to category of crime in Toronto Across 2014 - 2021"
+#| label: figure2
+
+cleaned_data_dropped_grouped |>
+  ggplot(aes(x = reported_year, y = count, colour = subtype)) + 
+  geom_point(linewidth = 5, alpha = 0.3)+
+  geom_line(linewidth = 1)+
+  theme_minimal()+
+  labs(
+    title = "Victims of Crime in Toronto Across 2014 - 2021",
+    x = "Year",  
+    y = "Number of Victims", 
+    colour = "Category of Crime" )
+  
+
+
+```
+
+```{r}
+### making a data frame that includes the variable sex so that I can call on it for a graph
+
+sex_data <- cleaned_data_dropped |>
+  group_by(subtype,sex, reported_year) |>
+  summarise(across(count, sum))
+
+sex_data
+
+```
+
+See @figure3
+
+```{r}
+
+## calling on my data frame to create a bar plot of the sex of the victims across time 
+
+#| fig-cap: "How the victims of crimes varries across sex in Toronto from 2014-2021"
+#| label: figure2
+
+ggplot(sex_data, aes
+       (x =reported_year, 
+        y =count, 
+        fill =sex))+
+            geom_bar(position="dodge", stat="identity")+
+            facet_wrap(~subtype)+
+            scale_fill_manual(values=c("#C0AFE2", "#ADD8E6", "#C0AFE2"))+
+            theme_minimal()+
+            labs(
+            title = "Victims of Crime in Toronto Categorized by Sex Across 2014 - 2021",
+            x = "Year",  
+            y = "Number of Victims",
+            legend = "Sex")
+           
+
+
+
+```
+
+## References
