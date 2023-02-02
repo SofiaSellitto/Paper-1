@@ -21,110 +21,20 @@ We import tidyverse by @tidyverse for convenience because it contains many other
 library(tidyverse)
 library(ggplot2)
 library(knitr)
-
-
-```
-
-```{r}
-## Loading the data set from Open Toronto 
-
 library(janitor)
-library(opendatatoronto)
 library(dplyr)
 
-# get package
-package <- show_package("police-annual-statistical-report-victims-of-crime")
-package
-
-# get all resources for this package
-resources <- list_package_resources("police-annual-statistical-report-victims-of-crime")
-
-# identify datastore resources; by default, Toronto Open Data sets datastore resource format to CSV for non-geospatial and GeoJSON for geospatial resources
-datastore_resources <- filter(resources, tolower(format) %in% c('csv', 'geojson'))
-
-# load the first datastore resource as a sample
-data <- filter(datastore_resources, row_number()==1) %>% get_resource()
-data
 ```
 
-```{r}
-## checking for all possible categories of crime included in the data set 
 
-unique(data$Subtype)
-
-```
 
 ```{r}
-## checking for all possible age-cohorts included in the data set 
-
-unique(data$AgeCohort)
-
-
-```
-
-```{r}
-## checking for all possible genders included in the data set 
-
-unique(data$Sex)
-
-
-```
-
-```{r}
-
-## making names easier to type  
-
-cleaned_data <-
-  clean_names(data)
-
-head(cleaned_data)
-
-
-```
-
-```{r}
-
-## Selecting only the variables of interest 
-
-cleaned_data |> 
-  select(
-    reported_year,
-    subtype,
-    sex,
-   
-  )
-
-```
-
-```{r}
-
-## Checking for missing data in year column, if a number is given back, we know no dates are missing  
-
-mean(cleaned_data$reported_year)
-
-
-```
-
-```{r}
-
-## Cross-tabulating to understand the pattern of unknown data
-
-xtabs(~sex+age_cohort, data=cleaned_data)
-
-```
-
-```{r}
-
-## Changing "count" column from a character to numeric so it can be summed
-
-cleaned_data_dropped <- cleaned_data 
-
-
-cleaned_data_dropped$count = as.numeric(as.character(cleaned_data_dropped$count))
-
+cleaned_data_dropped <- read.csv("~/Inputs/Tutorial 1/Scripts/cleaned_data.csv")
 head(cleaned_data_dropped)
-
 ```
+
+
+
 
 ```{r}
 
@@ -158,13 +68,6 @@ knitr::kable(head(cleaned_data_dropped_grouped), "simple", caption = "The first 
 
 
 ```
-
-
-
-
-
-
-
 
 ```{r}
 
